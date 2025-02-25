@@ -19,7 +19,11 @@ GET http://localhost:5005/price-range?month=6
 GET http://localhost:5005/categories?month=6
 ###
 
-GET http://localhost:5005/combined-data/?month=6
+GET http://localhost:5005/combined-data/?month=
+###
+
+# using render URL
+GET https://roxilerdb.onrender.com/transactions?&search=4tb
 ###
 
 GET https://roxilerdb.onrender.com/combined-data?month=6

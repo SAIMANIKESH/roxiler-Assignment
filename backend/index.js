@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const port = process.env.PORT || 5005;
 // console.log(port);
+
 const app = express();
 app.use(express.json());
 app.use(cors());  // cross-origin resource sharing -> enables CORS for all routes
@@ -23,7 +24,7 @@ const initializeDBAndServer = async () => {
         });
         if (port == 5005) {
           app.listen(port, () => {
-            console.log(`Server Running at http://localhost:${port}/`);
+            console.log(`Server is running at http://localhost:${port}/`);
           });
         }
     } catch (err) {
@@ -153,40 +154,42 @@ app.get('/categories', async (req, res) => {
     }
 });
 
+const monthsData = {
+  1: "January (01)",
+  2: "February (02)",
+  3: "March (03)",
+  4: "April (04)",
+  5: "May (05)",
+  6: "June (06)",
+  7: "July (07)",
+  8: "August (08)",
+  9: "September (09)",
+  10: "October (10)",
+  11: "November (11)",
+  12: "December (12)",
+};
+
 // API-5 GET the combined data of API-2, API-3, and API-4
 app.get('/combined-data', async (req, res) => {
     try {
       const { month } = req.query;
-      const query = `
-        SELECT 
-          SUM(CASE WHEN sold = 1 THEN price ELSE 0 END)  as totalSales,
-          COUNT(CASE WHEN sold = 1 THEN 1 END) as totalItemsSold,
-          COUNT(CASE WHEN sold = 0 THEN 1 END) as totalItemsNotSold,
+      const statisticsUrl = `https://roxilerdb.onrender.com/statistics?month=${month}`;
+      const priceRangeUrl = `https://roxilerdb.onrender.com/price-range?month=${month}`;
+      const categoriesUrl = `https://roxilerdb.onrender.com/categories?month=${month}`;
 
-          COUNT(CASE WHEN (price >= 0 AND price <= 100) THEN 1 END) AS '0-100',
-          COUNT(CASE WHEN (price >= 101 AND price <= 200) THEN 1 END) AS '101-200',
-          COUNT(CASE WHEN (price >= 201 AND price <= 300) THEN 1 END) AS '201-300',
-          COUNT(CASE WHEN (price >= 301 AND price <= 400) THEN 1 END) AS '301-400',
-          COUNT(CASE WHEN (price >= 401 AND price <= 500) THEN 1 END) AS '401-500',
-          COUNT(CASE WHEN (price >= 501 AND price <= 600) THEN 1 END) AS '501-600',
-          COUNT(CASE WHEN (price >= 601 AND price <= 700) THEN 1 END) AS '601-700',
-          COUNT(CASE WHEN (price >= 701 AND price <= 800) THEN 1 END) AS '701-800',
-          COUNT(CASE WHEN (price >= 801 AND price <= 900) THEN 1 END) AS '801-900',
-          COUNT(CASE WHEN (price >= 901) THEN 1 END) AS '901-above'
-        FROM products
-        WHERE (? IS NULL OR CAST(strftime('%m', date_of_sale) AS INT) = ?);
-      `;
+      const [statisticsData, priceRangeData, categoriesData] = await Promise.all([
+        axios.get(statisticsUrl).then(response => response.data),
+        axios.get(priceRangeUrl).then(response => response.data),
+        axios.get(categoriesUrl).then(response => response.data)
+      ]);
 
-      const query1 = `
-        SELECT category, COUNT(*) as totalItems
-        FROM products
-        WHERE (? IS NULL OR CAST(strftime('%m', date_of_sale) AS INT) = ?)
-        GROUP BY category;
-      `;
-
-      const combinedData = await db.all(query, [month || null, month || null]);
-      const categories = await db.all(query1, [month || null, month || null]); 
-      res.status(200).json({ combinedData, categories });
+      const combinedData = {
+        month : monthsData[month],
+        statisticsData,
+        priceRangeData,
+        categoriesData
+      };
+      res.status(200).json(combinedData);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: error.message });
@@ -195,25 +198,35 @@ app.get('/combined-data', async (req, res) => {
 
 
 /* for API-5
-const { month=3, page=1, size=10, search='' } = req.query;
-        const transactionsUrl = `https://roxilerdb.onrender.com/transactions?month=${month}&search=${search}&page=${page}&size=${size}`;
-        const statisticsUrl = `https://roxilerdb.onrender.com/statistics?month=${month}`;
-        const priceRangeUrl = `https://roxilerdb.onrender.com/price-range?month=${month}`;
-        const categoriesUrl = `https://roxilerdb.onrender.com/categories?month=${month}`;
+const query = `
+  SELECT 
+    SUM(CASE WHEN sold = 1 THEN price ELSE 0 END)  as totalSales,
+    COUNT(CASE WHEN sold = 1 THEN 1 END) as totalItemsSold,
+    COUNT(CASE WHEN sold = 0 THEN 1 END) as totalItemsNotSold,
 
-        const [transactionsData, statisticsData, priceRangeData, categoriesData] = await Promise.all([
-            axios.get(transactionsUrl).then(response => response.data),
-            axios.get(statisticsUrl).then(response => response.data),
-            axios.get(priceRangeUrl).then(response => response.data),
-            axios.get(categoriesUrl).then(response => response.data)
-        ]);
+    COUNT(CASE WHEN (price >= 0 AND price <= 100) THEN 1 END) AS '0-100',
+    COUNT(CASE WHEN (price >= 101 AND price <= 200) THEN 1 END) AS '101-200',
+    COUNT(CASE WHEN (price >= 201 AND price <= 300) THEN 1 END) AS '201-300',
+    COUNT(CASE WHEN (price >= 301 AND price <= 400) THEN 1 END) AS '301-400',
+    COUNT(CASE WHEN (price >= 401 AND price <= 500) THEN 1 END) AS '401-500',
+    COUNT(CASE WHEN (price >= 501 AND price <= 600) THEN 1 END) AS '501-600',
+    COUNT(CASE WHEN (price >= 601 AND price <= 700) THEN 1 END) AS '601-700',
+    COUNT(CASE WHEN (price >= 701 AND price <= 800) THEN 1 END) AS '701-800',
+    COUNT(CASE WHEN (price >= 801 AND price <= 900) THEN 1 END) AS '801-900',
+    COUNT(CASE WHEN (price >= 901) THEN 1 END) AS '901-above'
 
-        const combinedData = {
-          transactionsData,
-          statisticsData,
-          priceRangeData,
-          categoriesData,
-          month, page, size, search
-        };
-        res.status(200).json(combinedData);
+  FROM products
+  WHERE (? IS NULL OR CAST(strftime('%m', date_of_sale) AS INT) = ?);
+`;
+
+const query1 = `
+  SELECT category, COUNT(*) as totalItems
+  FROM products
+  WHERE (? IS NULL OR CAST(strftime('%m', date_of_sale) AS INT) = ?)
+  GROUP BY category;
+`;
+
+const combinedData = await db.all(query, [month || null, month || null]);
+const categories = await db.all(query1, [month || null, month || null]); 
+res.status(200).json({ combinedData, categories });
 */

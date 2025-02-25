@@ -76,7 +76,8 @@ const createTables = async (db) => {
 // Insert data into the database
 const insertRows = async (db) => {
 	const productsData = await getData();
-
+  console.log(`📦 Total products fetched: ${productsData.length}`);
+  
 	if (!productsData.length) {
     console.error("🚫 No data fetched to insert.");
     return;
