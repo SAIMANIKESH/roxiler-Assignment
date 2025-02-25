@@ -5,7 +5,7 @@ GET http://localhost:5005/
 # for index.js
 GET http://localhost:5005/transactions?&search=4tb
 ###
-GET http://localhost:5005/transactions?month=&search=550&page=4&size=10
+GET http://localhost:5005/transactions?month=&search=550&page=2&size=10
 ###
 # http://localhost:5005/transactions?&search=&page=1&size= -> this is invalid coz size is empty if u mention size then 
 # u must give value coz when u give size then it will be used in the query to get the value then it returns undefined nd makes invalid request
