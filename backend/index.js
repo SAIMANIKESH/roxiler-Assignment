@@ -74,8 +74,10 @@ app.get('/transactions', async (req, res) => {
         month || null, month || null, `%${search}%`, `%${search}%`, isNaN(search) ? Number.MAX_SAFE_INTEGER : search
       ]);
       const totalPages = Math.ceil(total_products / size);
-      const hasNextPage = page < totalPages;
-      res.status(200).send({ query_result, hasNextPage });
+      const nextPages = Math.abs(page - totalPages);
+      const prevPages = Math.abs(page - 1);
+      // console.log(total_products, totalPages, prevPages, nextPages);
+      res.status(200).send({ query_result, totalPages, prevPages, nextPages });
 
     } catch (error) {
         console.error(error);
